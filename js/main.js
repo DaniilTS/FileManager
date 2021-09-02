@@ -1,6 +1,12 @@
 const strg = firebase.storage();
 let path = 'Root';
 
+let Folders = [];
+let Files = [];
+
+let FilteredFolders = [];
+let FilteredFiles = [];
+
 auth.onAuthStateChanged((user) => {
     if (user) {
         setUserNameOnHeader(user);
@@ -19,6 +25,8 @@ function mainFunction(user) {
     document.addEventListener('click', removeContextMenus);
     document.getElementById('logOutBtn').addEventListener('click', signOut);
     document.getElementById('previousFolderBtn').addEventListener('click', closeFolder);
+    document.getElementById('searchBtn').addEventListener('click', search);
+    document.getElementById('optionSelect').addEventListener('change', sortBy);
 
     let creationFormIsExists = false;
     document.getElementById('createNewBtn').addEventListener('click', function () {
@@ -65,18 +73,19 @@ function mainFunction(user) {
 
         return checkBox;
     }
+
     function createUploadDiv() {
         const uploadDiv = createElement('div', ['upload-div']);
 
-        let files = [];
+        let filesToLoad = [];
         const chooseFileBtn = createElement('input', ['upload-div__input'], 'files', 'choose files', 'file');
-        chooseFileBtn.addEventListener('change', (e) => files = e.target.files);
+        chooseFileBtn.addEventListener('change', (e) => filesToLoad = e.target.files);
 
         const uploadFileBtn = createElement('button', ['upload-div__button'], null, 'upload files', 'button');
         uploadFileBtn.addEventListener('click', function () {
-            if (files.length !== 0) {
-                for (let i = 0; i < files.length; i++) {
-                    const file = files[i];
+            if (filesToLoad.length !== 0) {
+                for (let i = 0; i < filesToLoad.length; i++) {
+                    const file = filesToLoad[i];
                     const fileName = file.name;
 
                     let storage = strg.ref(`${usersRef}/${path}/${fileName}`);
@@ -109,6 +118,8 @@ function mainFunction(user) {
                                         creationFormIsExists = false;
                                     }
                                 })
+
+                            Files = [...appendArr];
                         });
                     });
                 }
@@ -148,6 +159,8 @@ function mainFunction(user) {
                     folders: appendResult
                 })
 
+                Folders = [...appendResult];
+
                 removeFormFunc();
             })
         })
@@ -155,23 +168,11 @@ function mainFunction(user) {
         return submitNewFileBtn;
     }
 
-
     function createContentDivInput() {
         const contentDivInput = createElement('input', ['create-new-form__input'], 'fileNameInput');
         contentDivInput.placeholder = 'folder name';
 
         return contentDivInput;
-    }
-
-    function loadDocuments(creationFunc, path) {
-        db.ref(path).get().then(function (snapshot) {
-            let documents = snapshot.val();
-            if (documents !== null) {
-                documents.forEach((doc) => {
-                    creationFunc(doc);
-                })
-            }
-        })
     }
 
     function deleteFirebaseObject(element, isFolder) {
@@ -184,6 +185,7 @@ function mainFunction(user) {
             deleteFile(`${usersRef}/${path}`, objectName, element);
         }
     }
+
     function deleteFolderContents(path) {
         const ref = strg.ref(path);
         ref.listAll()
@@ -199,6 +201,7 @@ function mainFunction(user) {
                 console.log(error);
             });
     }
+
     function deleteFolder (folderName, element) {
         const pathToFolder = `${usersRef}/${path}`;
         const dbRef = db.ref(`${pathToFolder}/folders`);
@@ -217,7 +220,9 @@ function mainFunction(user) {
         })
 
         db.ref(`${pathToFolder}/${folderName}`).remove();
+        Folders.remove(folderName);
     }
+
     function deleteFile(pathToFile, fileName, element) {
         const strgRef = strg.ref(pathToFile);
         let childRef = strgRef.child(fileName);
@@ -237,6 +242,8 @@ function mainFunction(user) {
                 });
             })
         })
+
+        Files.remove(fileName);
     }
 
     function createFolderElement(folderName) {
@@ -244,7 +251,7 @@ function mainFunction(user) {
         li.addEventListener('contextmenu', (ev) => createContextMenu(li, true, ev));
 
         const btn = createElement('button', ['list-item__button'], null, '', 'button');
-        btn.addEventListener('dblclick', () => openFolder(folderName, btn))
+        btn.addEventListener('dblclick', () => openFolder(btn))
 
         const img = selectImageForNewElement(true);
         const span = createElement('span', ['list-item__span'], null, folderName, null, 'FolderName');
@@ -271,13 +278,13 @@ function mainFunction(user) {
         div.style.left = `${ev.clientX}px`;
         div.style.top = `${ev.clientY}px`;
 
-        const loadSpan = createElement('button', ['oncontextmenu__span'], null, 'load', 'button');
-        loadSpan.addEventListener('click', () => loadFile(element));
+        const span = createElement('button', ['oncontextmenu__span'], null, isFolder ? 'open' : 'load', 'button');
+        span.addEventListener('click', () => isFolder ? openFolder(element) : loadFile(element));
 
         const deleteSpan = createElement('button', ['oncontextmenu__span'], null, 'delete', 'button');
         deleteSpan.addEventListener('click', () => deleteFirebaseObject(element, isFolder))
 
-        div.append(loadSpan, deleteSpan);
+        div.append(span, deleteSpan);
 
         removeContextMenus();
         document.body.append(div);
@@ -289,7 +296,7 @@ function mainFunction(user) {
             .then((url) => {
                 const xhr = new XMLHttpRequest();
                 xhr.responseType = 'blob';
-                xhr.onload = (event) => {
+                xhr.onload = () => {
                     const blob = xhr.response;
                     const link = createElement('a');
                     link.href = URL.createObjectURL(blob);
@@ -299,15 +306,17 @@ function mainFunction(user) {
                 xhr.send();
             })
             .catch((error) => {
+                console.log(error);
             });
     }
 
-    function openFolder(foldersName, btn) {
+    function openFolder(btn) {
         const folderName = getNameFromSpan(btn);
         path += `/${folderName}`;
 
         updateElementsList()
     }
+
     function closeFolder() {
         let result = path.split('/');
         if(result.length!==1) {
@@ -319,12 +328,69 @@ function mainFunction(user) {
     }
 
     function updateElementsList() {
+        cleanArrays();
+
         foldersPathElement.innerText = path;
 
         elementsList.innerHTML = '';
-        loadDocuments(createFolderElement, `${usersRef}/${path}/folders`);
-        loadDocuments(createFileElement, `${usersRef}/${path}/files`);
+        loadDocuments(createFolderElement, `${usersRef}/${path}/folders`, Folders);
+        loadDocuments(createFileElement, `${usersRef}/${path}/files`, Files);
     }
+
+    function cleanArrays(){
+        Folders = [];
+        Files = [];
+        FilteredFolders = [];
+        FilteredFiles = [];
+    }
+
+    function loadDocuments(creationFunc, path, arrToUpdate) {
+        db.ref(path).get().then(function (snapshot) {
+            let documents = snapshot.val();
+            if(documents){
+                arrToUpdate.push(...documents);
+            }
+
+            updateElementsListByArray(creationFunc, documents);
+        })
+    }
+
+    function updateElementsListByArray(creationFunc, arr){
+        if (arr !== null) {
+            arr.forEach((doc) => {
+                creationFunc(doc);
+            })
+        }
+    }
+
+    function search() {
+        const pattern = document.getElementById('searchInput').value;
+        FilteredFolders = Folders.filter(name => name.toLowerCase().includes(pattern.toLowerCase()));
+        FilteredFiles = Files.filter(name => name.toLowerCase().includes(pattern.toLowerCase()));
+
+        elementsList.innerHTML = '';
+        updateElementsListByArray(createFolderElement, FilteredFolders);
+        updateElementsListByArray(createFileElement, FilteredFiles);
+    }
+
+    function sortBy() {
+        const markedFolders = rebuildDocs(Folders, true);
+        const markedFiles = rebuildDocs(Files, false);
+        const resultArr = [...markedFolders, ...markedFiles];
+
+        elementsList.innerHTML = '';
+        let sortedArr = [];
+        if(this.value === 'Sort by name'){
+            sortedArr = resultArr.sort(dynamicSort('name'));
+        } else {
+
+        }
+
+        sortedArr.forEach((doc) => {
+            doc.isFolder ? createFolderElement(doc.name) : createFileElement(doc.name);
+        })
+    }
+
 
 }
 
@@ -355,3 +421,25 @@ function getNameFromSpan(element){
     return [...element.getElementsByTagName('span')][0].innerText;
 }
 
+function dynamicSort(property) {
+    let sortOrder = 1;
+    if(property[0] === "-") {
+        sortOrder = -1;
+        property = property.substr(1);
+    }
+
+    return function (a,b) {
+        let result = (a[property] < b[property]) ? -1 : (a[property] > b[property]) ? 1 : 0;
+        return result * sortOrder;
+    }
+}
+
+function rebuildDocs(array, isFolder) {
+    return array.map(function (doc) {
+        return {
+            name: doc,
+            isFolder: isFolder
+        };
+    });
+
+}

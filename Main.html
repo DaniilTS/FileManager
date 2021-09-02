@@ -31,7 +31,10 @@
         </div>
         <div class="main-content">
             <div class="main-content__top top">
-                <input class="top__search" type="text" placeholder="Search">
+                <div>
+                    <input class="top__search" type="text" placeholder="file/folder name" id="searchInput">
+                    <button class="top__search-button" id="searchBtn">Search</button>
+                </div>
                 <select class="top__select">
                     <option selected hidden>Actions</option>
                     <optgroup label="View">
@@ -42,7 +45,6 @@
                     <optgroup label="Sort by...">
                         <option>Sort by name</option>
                         <option>Sort by size</option>
-                        <option>Sort by date</option>
                     </optgroup>
                     <optgroup label="Actions">
                         <option>Create New</option>
@@ -59,11 +61,10 @@
                         <img class="actions-block__create-icon" src="media/newFolder.png" alt="pic">
                         <span>Create...</span>
                     </button>
-                    <select class="actions-block__sort-select">
+                    <select class="actions-block__sort-select" id="optionSelect">
                         <option hidden selected>Sort by...</option>
                         <option>Sort by name</option>
                         <option>Sort by size</option>
-                        <option>Sort by date</option>
                     </select>
                     <div class="actions-block__organization-models org-models">
                         <button class="org-models__button" type="button">
