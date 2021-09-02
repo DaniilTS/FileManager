@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>SignUp</title>
+    <link rel="stylesheet" href="css/SignUp.css">
+    <link rel="icon" href='media/Folder.png' type="image/x-icon"/>
+</head>
+<body>
+<header>
+    <h1>MyStorage</h1>
+    <button class="header__button" id="logInBtn">Log In</button>
+</header>
+<main>
+    <form class="sign-up-form">
+        <div class="sign-up-form__content">
+            <input class="sign-up-form__input" type="email" placeholder="Email" id="email">
+            <input class="sign-up-form__input" type="text" placeholder="Name" id="name">
+            <input class="sign-up-form__input" type="password" placeholder="Password" id="password">
+        </div>
+        <button class="sign-up-form__button" id="signUpBtn" type="button">Sign Up</button>
+    </form>
+</main>
+</body>
+</html>
+
+<script src="https://www.gstatic.com/firebasejs/live/3.1/firebase.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.6.2/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.6.2/firebase-auth.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.6.2/firebase-database.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.6.2/firebase-analytics.js"></script>
+<script src="js/common.js"></script>
+<script src="js/signup.js"></script>

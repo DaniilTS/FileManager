@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>LogIn</title>
+    <link rel="stylesheet" href="css/LogIn.css">
+    <link rel="icon" href='media/Folder.png' type="image/x-icon"/>
+</head>
+<body>
+<header>
+    <h1>MyStorage</h1>
+    <button class="header__button" id="signUpBtn">Sign Up</button>
+</header>
+<main>
+    <form class="log-in-form">
+        <div class="log-in-form__content">
+            <input class="log-in-form__input" type="text" id="email" placeholder="Email">
+            <input class="log-in-form__input" type="password" id="password" placeholder="Password">
+        </div>
+        <button class="log-in-form__button" id="logInBtn" type="button">Log In</button>
+    </form>
+</main>
+</body>
+</html>
+
+<script src="https://www.gstatic.com/firebasejs/live/3.1/firebase.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.6.2/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.6.2/firebase-auth.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.6.2/firebase-database.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.6.2/firebase-analytics.js"></script>
+<script src="js/common.js"></script>
+<script src="js/login.js"></script>
