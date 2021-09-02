@@ -37,14 +37,9 @@
                 </div>
                 <select class="top__select">
                     <option selected hidden>Actions</option>
-                    <optgroup label="View">
-                        <option>Grid</option>
-                        <option>List</option>
-                        <option>Table</option>
-                    </optgroup>
                     <optgroup label="Sort by...">
-                        <option>Sort by name</option>
-                        <option>Sort by size</option>
+                        <option>Sort by name desc</option>
+                        <option>Sort by name asc</option>
                     </optgroup>
                     <optgroup label="Actions">
                         <option>Create New</option>
@@ -63,26 +58,10 @@
                     </button>
                     <select class="actions-block__sort-select" id="optionSelect">
                         <option hidden selected>Sort by...</option>
-                        <option>Sort by name</option>
-                        <option>Sort by size</option>
+                        <option>Sort by name desc</option>
+                        <option>Sort by name asc</option>
                     </select>
-                    <div class="actions-block__organization-models org-models">
-                        <button class="org-models__button" type="button">
-                            <img class="view-icon" src="media/grid_view.png" alt="pic">
-                        </button>
-                        <button class="org-models__button" type="button">
-                            <img class="view-icon" src="media/list_view.png" alt="pic">
-                        </button>
-                        <button class="org-models__button" type="button">
-                            <img class="view-icon" src="media/table.png" alt="pic">
-                        </button>
-                        <select class="org-models__select">
-                            <option hidden selected>View</option>
-                            <option>Grid</option>
-                            <option>List</option>
-                            <option>Table</option>
-                        </select>
-                    </div>
+                    <button class="remove-sort__button" id="removeSortBtn">X</button>
                 </div>
             </div>
             <ul class="main-content__elements-list elements-list" id="elementsList"></ul>

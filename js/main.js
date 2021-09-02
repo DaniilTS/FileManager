@@ -3,7 +3,6 @@ let path = 'Root';
 
 let Folders = [];
 let Files = [];
-
 let FilteredFolders = [];
 let FilteredFiles = [];
 
@@ -27,6 +26,16 @@ function mainFunction(user) {
     document.getElementById('previousFolderBtn').addEventListener('click', closeFolder);
     document.getElementById('searchBtn').addEventListener('click', search);
     document.getElementById('optionSelect').addEventListener('change', sortBy);
+    document.getElementById('removeSortBtn').addEventListener('click', removeSort);
+
+    function removeSort(){
+        elementsList.innerHTML = '';
+        updateElementsListByArray(createFolderElement, Folders);
+        updateElementsListByArray(createFileElement, Files);
+
+        document.getElementById('optionSelect').value = 'Sort by...';
+        document.getElementById('searchInput').value = '';
+    }
 
     let creationFormIsExists = false;
     document.getElementById('createNewBtn').addEventListener('click', function () {
@@ -141,31 +150,34 @@ function mainFunction(user) {
             foldersRef.get().then((snapshot) => {
                 let appendResult = [];
 
-                let foldersNames = snapshot.val();
-                if (foldersNames == null) {
+                const folders = snapshot.val();
+                if (folders == null) {
                     appendResult.push(folderName);
                     createFolderElement(folderName, elementsList);
+                    updateFoldersRef(appendResult, removeFormFunc);
                 } else {
-                    if (foldersNames.includes(folderName)) {
+                    if (folders.includes(folderName )) {
                         alert('error: folder alreadyExists');
                     } else {
-                        appendResult.push(...foldersNames, folderName);
+                        appendResult.push(...folders, folderName);
                         createFolderElement(folderName, elementsList);
+                        updateFoldersRef(appendResult, removeFormFunc);
                     }
                 }
-
-                const userRef = db.ref(`${usersRef}/${path}`);
-                userRef.update({
-                    folders: appendResult
-                })
-
-                Folders = [...appendResult];
-
-                removeFormFunc();
             })
         })
 
         return submitNewFileBtn;
+    }
+
+    function updateFoldersRef(appendResult, removeFormFunc){
+        db.ref(`${usersRef}/${path}`).update({
+            folders: appendResult
+        })
+
+        Folders = [...appendResult];
+
+        removeFormFunc();
     }
 
     function createContentDivInput() {
@@ -314,7 +326,7 @@ function mainFunction(user) {
         const folderName = getNameFromSpan(btn);
         path += `/${folderName}`;
 
-        updateElementsList()
+        updateElementsList();
     }
 
     function closeFolder() {
@@ -333,11 +345,12 @@ function mainFunction(user) {
         foldersPathElement.innerText = path;
 
         elementsList.innerHTML = '';
+
         loadDocuments(createFolderElement, `${usersRef}/${path}/folders`, Folders);
         loadDocuments(createFileElement, `${usersRef}/${path}/files`, Files);
     }
 
-    function cleanArrays(){
+    function cleanArrays() {
         Folders = [];
         Files = [];
         FilteredFolders = [];
@@ -374,24 +387,17 @@ function mainFunction(user) {
     }
 
     function sortBy() {
-        const markedFolders = rebuildDocs(Folders, true);
-        const markedFiles = rebuildDocs(Files, false);
+        const markedFolders = rebuildDocs(FilteredFolders ? Folders : FilteredFolders, true);
+        const markedFiles = rebuildDocs(FilteredFiles ? Files : FilteredFiles, false);
         const resultArr = [...markedFolders, ...markedFiles];
 
         elementsList.innerHTML = '';
-        let sortedArr = [];
-        if(this.value === 'Sort by name'){
-            sortedArr = resultArr.sort(dynamicSort('name'));
-        } else {
-
-        }
+        let sortedArr = resultArr.sort(dynamicSort(this.value === 'Sort by name desc' ? 'name' : '-name'));
 
         sortedArr.forEach((doc) => {
             doc.isFolder ? createFolderElement(doc.name) : createFileElement(doc.name);
         })
     }
-
-
 }
 
 function setUserNameOnHeader(user) {
@@ -441,5 +447,4 @@ function rebuildDocs(array, isFolder) {
             isFolder: isFolder
         };
     });
-
 }

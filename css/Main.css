@@ -54,7 +54,6 @@
 }
 
 .actions-block{
-    width: 440px;
     display: flex;
     flex-direction: row;
     justify-content: space-between;
@@ -478,4 +477,11 @@ and (-webkit-min-device-pixel-ratio: 2) {
 
 .top__search-button:active{
     transform: scale(0.95);
+}
+
+.remove-sort__button{
+    background-color: transparent;
+    font-size: 40px;
+    margin-right: 5px;
+    margin-left: 5px;
 }
