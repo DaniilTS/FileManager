@@ -15,6 +15,11 @@ function mainFunction(user) {
     const elementsList = document.getElementById('elementsList');
     const usersRef = `users/${user.uid}`;
 
+    updateElementsList();
+    document.addEventListener('click', removeContextMenus);
+    document.getElementById('logOutBtn').addEventListener('click', signOut);
+    document.getElementById('previousFolderBtn').addEventListener('click', closeFolder);
+
     let creationFormIsExists = false;
     document.getElementById('createNewBtn').addEventListener('click', function () {
         if (creationFormIsExists) return;
@@ -60,7 +65,6 @@ function mainFunction(user) {
 
         return checkBox;
     }
-
     function createUploadDiv() {
         const uploadDiv = createElement('div', ['upload-div']);
 
@@ -129,13 +133,13 @@ function mainFunction(user) {
                 let foldersNames = snapshot.val();
                 if (foldersNames == null) {
                     appendResult.push(folderName);
-                    createFolderElement(folderName);
+                    createFolderElement(folderName, elementsList);
                 } else {
                     if (foldersNames.includes(folderName)) {
                         alert('error: folder alreadyExists');
                     } else {
                         appendResult.push(...foldersNames, folderName);
-                        createFolderElement(folderName);
+                        createFolderElement(folderName, elementsList);
                     }
                 }
 
@@ -151,6 +155,14 @@ function mainFunction(user) {
         return submitNewFileBtn;
     }
 
+
+    function createContentDivInput() {
+        const contentDivInput = createElement('input', ['create-new-form__input'], 'fileNameInput');
+        contentDivInput.placeholder = 'folder name';
+
+        return contentDivInput;
+    }
+
     function loadDocuments(creationFunc, path) {
         db.ref(path).get().then(function (snapshot) {
             let documents = snapshot.val();
@@ -162,63 +174,6 @@ function mainFunction(user) {
         })
     }
 
-    function createFolderElement(folderName) {
-        const li = createElement('li', ['list-item'], null, '', null, null, false);
-        li.addEventListener('contextmenu', (ev) => createContextMenu(li, true, ev));
-
-        const btn = createElement('button', ['list-item__button'], null, '', 'button');
-        btn.addEventListener('dblclick', () => openFolder(folderName, btn))
-
-        const img = selectImageForNewElement(true);
-        const span = createElement('span', ['list-item__span'], null, folderName, null, 'FolderName');
-        btn.append(img, span);
-        li.appendChild(btn);
-        elementsList.appendChild(li);
-    }
-    function createFileElement(fileName) {
-        const li = createElement('li', ['list-item'], null, '', null, null, false);
-        const btn = createElement('button', ['list-item__button'], null, '', 'button');
-        const img = selectImageForNewElement(false);
-        const span = createElement('span', ['list-item__span'], null, fileName, null, 'FileName');
-        btn.append(img, span);
-        li.append(btn);
-        li.addEventListener('contextmenu', (ev) => createContextMenu(li, false, ev));
-        elementsList.appendChild(li);
-    }
-    function createContextMenu(element, isFolder, ev) {
-        const div = createElement('div', ['oncontextmenu__div']);
-        div.style.position = 'absolute';
-
-        div.style.left = `${ev.clientX}px`;
-        div.style.top = `${ev.clientY}px`;
-
-        const openSpan = createElement('button', ['oncontextmenu__span'], null, 'open', 'button');
-        const deleteSpan = createElement('button', ['oncontextmenu__span'], null, 'delete', 'button');
-        deleteSpan.addEventListener('click', () => deleteFirebaseObject(element, isFolder))
-
-        div.append(openSpan, deleteSpan);
-
-        removeContextMenus();
-        document.body.append(div);
-    }
-    function openFolder(foldersName, btn) {
-        const folderName = getNameFromSpan(btn);
-        path += `/${folderName}`;
-
-        foldersPathElement.innerText = path;
-
-        elementsList.innerHTML = '';
-
-        loadDocuments(createFolderElement, `${usersRef}/${path}/folders`);
-        loadDocuments(createFileElement, `${usersRef}/${path}/files`);
-    }
-    function createContentDivInput() {
-        const contentDivInput = createElement('input', ['create-new-form__input'], 'fileNameInput');
-        contentDivInput.placeholder = 'folder name';
-
-        return contentDivInput;
-    }
-
     function deleteFirebaseObject(element, isFolder) {
         const objectName = getNameFromSpan(element);
 
@@ -228,9 +183,7 @@ function mainFunction(user) {
         } else {
             deleteFile(`${usersRef}/${path}`, objectName, element);
         }
-
     }
-
     function deleteFolderContents(path) {
         const ref = strg.ref(path);
         ref.listAll()
@@ -246,7 +199,25 @@ function mainFunction(user) {
                 console.log(error);
             });
     }
+    function deleteFolder (folderName, element) {
+        const pathToFolder = `${usersRef}/${path}`;
+        const dbRef = db.ref(`${pathToFolder}/folders`);
 
+        dbRef.get().then((snapshot) => {
+            let dbArray = snapshot.val();
+            dbArray.remove(folderName);
+
+            db.ref(pathToFolder).update({
+                folders: dbArray
+            }).then(() => {
+                if(element){
+                    element.remove();
+                }
+            });
+        })
+
+        db.ref(`${pathToFolder}/${folderName}`).remove();
+    }
     function deleteFile(pathToFile, fileName, element) {
         const strgRef = strg.ref(pathToFile);
         let childRef = strgRef.child(fileName);
@@ -268,41 +239,93 @@ function mainFunction(user) {
         })
     }
 
-    function deleteFolder (folderName, element) {
-        const pathToFolder = `${usersRef}/${path}`;
-        const dbRef = db.ref(`${pathToFolder}/folders`);
+    function createFolderElement(folderName) {
+        const li = createElement('li', ['list-item'], null, '', null, null, false);
+        li.addEventListener('contextmenu', (ev) => createContextMenu(li, true, ev));
 
-        dbRef.get().then((snapshot) => {
-            let dbArray = snapshot.val();
-            dbArray.remove(folderName);
+        const btn = createElement('button', ['list-item__button'], null, '', 'button');
+        btn.addEventListener('dblclick', () => openFolder(folderName, btn))
 
-            db.ref(pathToFolder).update({
-                folders: dbArray
-            }).then(() => {
-                if(element){
-                    element.remove();
-                }
+        const img = selectImageForNewElement(true);
+        const span = createElement('span', ['list-item__span'], null, folderName, null, 'FolderName');
+        btn.append(img, span);
+        li.appendChild(btn);
+        elementsList.appendChild(li);
+    }
+
+    function createFileElement(fileName) {
+        const li = createElement('li', ['list-item'], null, '', null, null, false);
+        const btn = createElement('button', ['list-item__button'], null, '', 'button');
+        const img = selectImageForNewElement(false);
+        const span = createElement('span', ['list-item__span'], null, fileName, null, 'FileName');
+        btn.append(img, span);
+        li.append(btn);
+        li.addEventListener('contextmenu', (ev) => createContextMenu(li, false, ev));
+        elementsList.appendChild(li);
+    }
+
+    function createContextMenu(element, isFolder, ev) {
+        const div = createElement('div', ['oncontextmenu__div']);
+        div.style.position = 'absolute';
+
+        div.style.left = `${ev.clientX}px`;
+        div.style.top = `${ev.clientY}px`;
+
+        const loadSpan = createElement('button', ['oncontextmenu__span'], null, 'load', 'button');
+        loadSpan.addEventListener('click', () => loadFile(element));
+
+        const deleteSpan = createElement('button', ['oncontextmenu__span'], null, 'delete', 'button');
+        deleteSpan.addEventListener('click', () => deleteFirebaseObject(element, isFolder))
+
+        div.append(loadSpan, deleteSpan);
+
+        removeContextMenus();
+        document.body.append(div);
+    }
+
+    function loadFile(element){
+        const fileName = getNameFromSpan(element);
+        strg.ref(`${usersRef}/${path}/${fileName}`).getDownloadURL()
+            .then((url) => {
+                const xhr = new XMLHttpRequest();
+                xhr.responseType = 'blob';
+                xhr.onload = (event) => {
+                    const blob = xhr.response;
+                    const link = createElement('a');
+                    link.href = URL.createObjectURL(blob);
+                    link.click();
+                };
+                xhr.open('GET', url);
+                xhr.send();
+            })
+            .catch((error) => {
             });
-        })
-
-        db.ref(`${pathToFolder}/${folderName}`).remove();
     }
 
-    function selectImageForNewElement(isFolder) {
-        const imageSrc = isFolder ? folderImageSrc : fileImageSrc;
-        return createElement('img', ['list-item__img'], null, '', null, imageSrc);
+    function openFolder(foldersName, btn) {
+        const folderName = getNameFromSpan(btn);
+        path += `/${folderName}`;
+
+        updateElementsList()
+    }
+    function closeFolder() {
+        let result = path.split('/');
+        if(result.length!==1) {
+            result.pop();
+        }
+        path = result.join('/');
+
+        updateElementsList();
     }
 
-    function getNameFromSpan(element){
-        return [...element.getElementsByTagName('span')][0].innerText;
+    function updateElementsList() {
+        foldersPathElement.innerText = path;
+
+        elementsList.innerHTML = '';
+        loadDocuments(createFolderElement, `${usersRef}/${path}/folders`);
+        loadDocuments(createFileElement, `${usersRef}/${path}/files`);
     }
 
-    loadDocuments(createFolderElement, `${usersRef}/${path}/folders`);
-    loadDocuments(createFileElement, `${usersRef}/${path}/files`);
-
-    document.addEventListener('click', removeContextMenus);
-    document.getElementById('logOutBtn').addEventListener('click', signOut);
-    // document.getElementById('previousFolderBtn').addEventListener('click', );
 }
 
 function setUserNameOnHeader(user) {
@@ -323,19 +346,12 @@ function removeContextMenus(){
     })
 }
 
-// function goToPreviousFolder(){
-//     const folderName = getNameFromSpan(btn);
-//     path += `/${folderName}`;
-//
-//     foldersPathElement.innerText = path;
-//
-//     elementsList.innerHTML = '';
-//
-//     loadDocuments(createFolderElement, `${usersRef}/${path}/folders`);
-//     loadDocuments(createFileElement, `${usersRef}/${path}/files`);
-// }
+function selectImageForNewElement(isFolder) {
+    const imageSrc = isFolder ? folderImageSrc : fileImageSrc;
+    return createElement('img', ['list-item__img'], null, '', null, imageSrc);
+}
 
-
-
-
+function getNameFromSpan(element){
+    return [...element.getElementsByTagName('span')][0].innerText;
+}
 
