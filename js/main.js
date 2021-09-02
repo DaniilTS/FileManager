@@ -286,9 +286,14 @@ function mainFunction(user) {
     function createContextMenu(element, isFolder, ev) {
         const div = createElement('div', ['oncontextmenu__div']);
         div.style.position = 'absolute';
-
         div.style.left = `${ev.clientX}px`;
         div.style.top = `${ev.clientY}px`;
+
+        if(!isFolder) {
+            const openSpan = createElement('button', ['oncontextmenu__span'], null, 'open', 'button');
+            openSpan.addEventListener('click', () => openDocument(element));
+            div.append(openSpan);
+        }
 
         const span = createElement('button', ['oncontextmenu__span'], null, isFolder ? 'open' : 'load', 'button');
         span.addEventListener('click', () => isFolder ? openFolder(element) : loadFile(element));
@@ -300,6 +305,41 @@ function mainFunction(user) {
 
         removeContextMenus();
         document.body.append(div);
+    }
+
+    function openDocument(element) {
+        const fileName = getNameFromSpan(element);
+        strg.ref(`${usersRef}/${path}/${fileName}`).getDownloadURL()
+            .then((url) => {
+                const div = createElement('div', ['preview-block']);
+
+                const closeBtn = createElement('button', ['preview-block__button'], null, 'X');
+                closeBtn.addEventListener('click', () => div.remove());
+
+                if(fileName.includes('.txt')){
+                    fetch(url)
+                        .then(response => response.text())
+                        .then(function (text){
+                            const article = createElement('article', ['file-preview']);
+                            article.innerHTML = text;
+
+                            div.append(closeBtn, article);
+                            document.body.append(div);
+                        });
+
+                } else if (fileName.includes('.png') || fileName.includes('.jpeg') || fileName.includes('.bmp')) {
+                    const img = createElement('img', ['file-preview']);
+                    img.setAttribute('src', url);
+
+                    div.append(closeBtn, img);
+                    document.body.append(div);
+                } else {
+                    alert(`can't open this file`);
+                }
+            })
+            .catch((error) => {
+                console.log(error);
+            });
     }
 
     function loadFile(element){
